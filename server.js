@@ -73,6 +73,52 @@ pure white seamless, cool grey concrete floor, flat front-fill gossamer light, n
 EXAMPLE (raked, moody):
 off-white seamless cyclorama, side-raked light chiseled and hard, feathered fill, shadows crushed blue on walls and floor only, product in true color unaffected by grade no cast on surface, cool desaturated silver environment, clinical atmosphere, eye-level three-quarter, full figure, digital sharp, desaturated silver glacial`;
 
+const TRANSLATOR_SYSTEM_INSTRUCTION = `You are a Creative Director's Prompt Translator. Your job is to take raw, messy, conversational input — thoughts, half-ideas, grammar mistakes, visual descriptions, mood expressions — and convert them into a sharp, high-impact AI image generation prompt.
+
+You output exactly ONE thing: the enhanced prompt. No explanations. No labels. No extra text.
+
+---
+
+RULES:
+
+1. If the input is too vague, incomplete, or missing visual direction (no subject, no setting, no mood) — output only:
+   [PAUSE] — then a single question asking for the one missing thing.
+
+2. If the input has enough to work with — output only the enhanced prompt.
+
+---
+
+HOW TO CONVERT:
+
+- Strip filler words, hesitation, grammar errors
+- Identify: Subject → Styling → Surface/Setting → Lighting → Mood/Tone → Camera feel
+- Replace casual words with creative direction vocabulary:
+  - "looks clean" → minimalist, editorial
+  - "dark vibe" → moody, chiaroscuro, shadow-forward
+  - "fancy" → luxury, high-end, couture
+  - "outdoor natural" → sun-drenched, open-air, golden hour
+  - "white background" → seamless white cyc, high-key studio
+  - "flat lay" → overhead editorial, styled flat composition
+  - "skin looks good" → skin-forward beauty lighting, retouched luminance
+  - "colorful" → saturated, vivid palette, chromatic depth
+  - "simple" → restrained, negative space, graphic composition
+
+- Keep the final prompt under 40 words
+- Write it as a continuous phrase, not bullet points
+- It should read like a brief given on a shoot day
+
+---
+
+VOCABULARY BANK (use freely):
+
+Lighting: Rembrandt, butterfly, rim-lit, diffused overhead, golden wash, hard shadow, backlit haze, practical glow
+Mood: editorial, campaign-ready, aspirational, intimate, raw, cinematic, ethereal, bold, minimal, street-level
+Surface/Set: seamless, lifestyle context, textured ground, architectural backdrop, in-situ, location-driven
+Finish: skin-forward, garment-led, product-hero, detail macro, wide environmental
+Lens feel: tight crop, mid-shot, full-length, shallow depth, wide open, compressed perspective`;
+
+const COMPRESS_SYSTEM_INSTRUCTION = `You are a prompt compression assistant. When the user pastes descriptive text (pose descriptions, outfit descriptions, scene details, etc.), compress it into a shorter version that retains all key details and specifics. Remove redundant words, simplify phrasing, keep all measurable values (angles, degrees, colors, etc.), and preserve the original tone and intent. Output only the compressed version, no explanation.`;
+
 app.use(express.json());
 app.use(express.static("public"));
 
@@ -260,10 +306,100 @@ app.post("/analyze/studio", upload.single("image"), async (req, res) => {
   }
 });
 
+app.post("/prompt/translate", async (req, res) => {
+  const text = req.body?.text;
+  if (text == null || String(text).trim() === "") {
+    return res.status(400).json({ error: "Missing or empty 'text' in request body." });
+  }
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    return res
+      .status(500)
+      .json({ error: "GEMINI_API_KEY environment variable is not set." });
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
+  const config = {
+    systemInstruction: [{ text: TRANSLATOR_SYSTEM_INSTRUCTION }],
+  };
+  const contents = [
+    {
+      role: "user",
+      parts: [{ text: String(text).trim() }],
+    },
+  ];
+
+  try {
+    const response = await ai.models.generateContentStream({
+      model: "gemini-2.5-flash",
+      config,
+      contents,
+    });
+
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    for await (const chunk of response) {
+      if (chunk.text) res.write(chunk.text);
+    }
+    res.end();
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      error: "Prompt translation failed",
+      message: err.message || String(err),
+    });
+  }
+});
+
+app.post("/prompt/compress", async (req, res) => {
+  const text = req.body?.text;
+  if (text == null || String(text).trim() === "") {
+    return res.status(400).json({ error: "Missing or empty 'text' in request body." });
+  }
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    return res
+      .status(500)
+      .json({ error: "GEMINI_API_KEY environment variable is not set." });
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
+  const config = {
+    systemInstruction: [{ text: COMPRESS_SYSTEM_INSTRUCTION }],
+  };
+  const contents = [
+    {
+      role: "user",
+      parts: [{ text: String(text).trim() }],
+    },
+  ];
+
+  try {
+    const response = await ai.models.generateContentStream({
+      model: "gemini-2.5-flash",
+      config,
+      contents,
+    });
+
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    for await (const chunk of response) {
+      if (chunk.text) res.write(chunk.text);
+    }
+    res.end();
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      error: "Prompt compression failed",
+      message: err.message || String(err),
+    });
+  }
+});
+
 const PORT = Number(process.env.PORT) || 5001;
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
   console.log(
-    'POST /analyze/pose, /analyze/outfit, or /analyze/studio with multipart form field "image".',
+    'POST /analyze/pose, /analyze/outfit, /analyze/studio (image), POST /prompt/translate, /prompt/compress (JSON body with "text").',
   );
 });

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Photo → Pose, Outfit, Studio</title>
+  <title>ONAI R1</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet" />
@@ -22,9 +22,12 @@
       box-sizing: border-box;
     }
 
-    body {
+    html, body {
+      height: 100%;
       margin: 0;
-      min-height: 100vh;
+    }
+
+    body {
       font-family: "DM Sans", system-ui, sans-serif;
       font-size: 15px;
       color: var(--text);
@@ -33,16 +36,91 @@
     }
 
     .page {
-      max-width: 720px;
-      margin: 0 auto;
-      padding: clamp(1.5rem, 5vw, 3rem) 1.25rem 4rem;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      width: 100%;
+      max-width: 100%;
+      padding: 0.5rem 1rem 1rem;
     }
 
-    h1 {
+    .page-header {
+      margin-bottom: 0.5rem;
+      flex-shrink: 0;
+    }
+
+    .three-col {
+      display: grid;
+      grid-template-columns: 0.9fr 1fr 1.1fr;
+      gap: 0;
+      align-items: stretch;
+      flex: 1;
+      min-height: 0;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    @media (max-width: 900px) {
+      .three-col {
+        grid-template-columns: 1fr;
+        flex: none;
+      }
+    }
+
+    .panel {
+      min-width: 0;
+      min-height: 0;
+      padding: 1.25rem;
+      border-right: 1px solid var(--border);
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      overflow: auto;
+    }
+
+    .panel:last-child {
+      border-right: none;
+    }
+
+    @media (max-width: 900px) {
+      .panel {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+      .panel:last-child {
+        border-bottom: none;
+      }
+    }
+
+    .panel .section-title {
+      margin-top: 0;
+    }
+
+    .panel .actions {
+      margin-bottom: 1rem;
+    }
+
+    .panel .results {
+      flex: 1;
+      min-height: 0;
+    }
+
+    .panel .result-card:last-child {
+      flex: 1;
+      min-height: 0;
+    }
+
+    .panel .result-card .value {
+      min-height: 2.5em;
+    }
+
+    .page-header h1 {
       font-family: "Instrument Serif", Georgia, serif;
       font-size: clamp(1.75rem, 4vw, 2.25rem);
       font-weight: 400;
-      margin: 0 0 0.5rem;
+      margin: 0;
       letter-spacing: -0.02em;
     }
 
@@ -228,49 +306,145 @@
     .hidden {
       display: none;
     }
+
+    .section-divider {
+      margin: 3rem 0 1.5rem;
+      border: 0;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .section-title {
+      font-family: "Instrument Serif", Georgia, serif;
+      font-size: 1.25rem;
+      font-weight: 400;
+      margin: 0 0 0.75rem;
+      color: var(--muted);
+    }
+
+    .translate-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+
+    .translate-wrap textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 0.75rem;
+      font-family: inherit;
+      font-size: 0.95rem;
+      color: var(--text);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      resize: vertical;
+      margin-bottom: 0.75rem;
+    }
+
+    .translate-wrap textarea::placeholder {
+      color: var(--muted);
+    }
+
+    .translate-wrap textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
   </style>
 </head>
 <body>
   <div class="page">
-    <h1>Photo → Pose, Outfit, Studio</h1>
-    <p class="subtitle">Upload one image and get pose, outfit, and studio prompts in one go.</p>
-
-    <div class="upload-zone" id="uploadZone" role="button" tabindex="0">
-      <input type="file" id="fileInput" accept="image/*" />
-      <span class="label">Drop an image here or click to choose</span>
-      <span class="filename hidden" id="filename"></span>
-      <div class="preview-wrap hidden" id="previewWrap">
-        <img id="preview" alt="Preview" />
-      </div>
+    <div class="page-header">
+      <h1>ONAI R1</h1>
     </div>
 
-    <div class="actions">
-      <button type="button" class="btn btn-primary" id="analyzeBtn" disabled>Analyze</button>
-    </div>
-
-    <div class="error-msg hidden" id="errorMsg"></div>
-
-    <div class="results">
-      <div class="result-card" data-type="pose">
-        <div class="head">
-          <h2 class="title">Pose</h2>
-          <button type="button" class="copy-btn" data-copy="pose" disabled>Copy</button>
+    <div class="three-col">
+      <div class="panel">
+        <h2 class="section-title">Photo · Pose · Outfit · Studio</h2>
+        <p class="subtitle" style="margin-bottom: 1rem;">Upload one image, get all three prompts.</p>
+        <div class="upload-zone" id="uploadZone" role="button" tabindex="0">
+          <input type="file" id="fileInput" accept="image/*" />
+          <span class="label">Drop an image or click</span>
+          <span class="filename hidden" id="filename"></span>
+          <div class="preview-wrap hidden" id="previewWrap">
+            <img id="preview" alt="Preview" />
+          </div>
         </div>
-        <p class="value placeholder" id="poseValue">—</p>
+        <div class="actions">
+          <button type="button" class="btn btn-primary" id="analyzeBtn" disabled>Analyze</button>
+        </div>
+        <div class="error-msg hidden" id="errorMsg"></div>
+        <div class="results">
+          <div class="result-card" data-type="pose">
+            <div class="head">
+              <h2 class="title">Pose</h2>
+              <button type="button" class="copy-btn" data-copy="pose" disabled>Copy</button>
+            </div>
+            <p class="value placeholder" id="poseValue">—</p>
+          </div>
+          <div class="result-card" data-type="outfit">
+            <div class="head">
+              <h2 class="title">Outfit</h2>
+              <button type="button" class="copy-btn" data-copy="outfit" disabled>Copy</button>
+            </div>
+            <p class="value placeholder" id="outfitValue">—</p>
+          </div>
+          <div class="result-card" data-type="studio">
+            <div class="head">
+              <h2 class="title">Studio</h2>
+              <button type="button" class="copy-btn" data-copy="studio" disabled>Copy</button>
+            </div>
+            <p class="value placeholder" id="studioValue">—</p>
+          </div>
+        </div>
       </div>
-      <div class="result-card" data-type="outfit">
-        <div class="head">
-          <h2 class="title">Outfit</h2>
-          <button type="button" class="copy-btn" data-copy="outfit" disabled>Copy</button>
+
+      <div class="panel">
+        <h2 class="section-title">Prompt compressor</h2>
+        <p class="subtitle" style="margin-bottom: 1rem;">Long prompt → shorter, same details.</p>
+        <div class="translate-wrap">
+          <textarea
+            id="compressInput"
+            placeholder="Paste pose, outfit, or scene description here..."
+            rows="4"
+          ></textarea>
+          <div class="actions">
+            <button type="button" class="btn btn-primary" id="compressBtn">Compress</button>
+          </div>
         </div>
-        <p class="value placeholder" id="outfitValue">—</p>
+        <div class="error-msg hidden" id="compressError"></div>
+        <div class="result-card" data-type="compress">
+          <div class="head">
+            <h2 class="title">Compressed prompt</h2>
+            <button type="button" class="copy-btn" data-copy="compress" disabled id="compressCopyBtn">Copy</button>
+          </div>
+          <p class="value placeholder" id="compressValue">—</p>
+        </div>
       </div>
-      <div class="result-card" data-type="studio">
-        <div class="head">
-          <h2 class="title">Studio</h2>
-          <button type="button" class="copy-btn" data-copy="studio" disabled>Copy</button>
+
+      <div class="panel">
+        <h2 class="section-title">Prompt translator</h2>
+        <p class="subtitle" style="margin-bottom: 1rem;">Raw thoughts → sharp creative brief.</p>
+        <div class="translate-wrap">
+          <textarea
+            id="translateInput"
+            placeholder="e.g. I want something dark and fancy, like a magazine shoot, white background..."
+            rows="4"
+          ></textarea>
+          <div class="actions">
+            <button type="button" class="btn btn-primary" id="translateBtn">Translate</button>
+          </div>
         </div>
-        <p class="value placeholder" id="studioValue">—</p>
+        <div class="error-msg hidden" id="translateError"></div>
+        <div class="result-card" data-type="translate">
+          <div class="head">
+            <h2 class="title">Enhanced prompt</h2>
+            <button type="button" class="copy-btn" data-copy="translate" disabled id="translateCopyBtn">Copy</button>
+          </div>
+          <p class="value placeholder" id="translateValue">—</p>
+        </div>
       </div>
     </div>
   </div>
@@ -286,6 +460,16 @@
     const poseEl = document.getElementById("poseValue");
     const outfitEl = document.getElementById("outfitValue");
     const studioEl = document.getElementById("studioValue");
+    const translateInput = document.getElementById("translateInput");
+    const translateBtn = document.getElementById("translateBtn");
+    const translateValue = document.getElementById("translateValue");
+    const translateError = document.getElementById("translateError");
+    const translateCopyBtn = document.getElementById("translateCopyBtn");
+    const compressInput = document.getElementById("compressInput");
+    const compressBtn = document.getElementById("compressBtn");
+    const compressValue = document.getElementById("compressValue");
+    const compressError = document.getElementById("compressError");
+    const compressCopyBtn = document.getElementById("compressCopyBtn");
 
     let selectedFile = null;
 
@@ -401,6 +585,94 @@
           }, 1500);
         } catch (_) {}
       });
+    });
+
+    function showTranslateError(msg) {
+      translateError.textContent = msg;
+      translateError.classList.remove("hidden");
+    }
+
+    function hideTranslateError() {
+      translateError.classList.add("hidden");
+    }
+
+    translateBtn.addEventListener("click", async () => {
+      const raw = translateInput.value.trim();
+      if (!raw) return;
+      hideTranslateError();
+      translateBtn.disabled = true;
+      translateValue.textContent = "Loading…";
+      translateValue.className = "value loading";
+      translateCopyBtn.disabled = true;
+      const card = document.querySelector('.result-card[data-type="translate"]');
+      card.classList.add("loading");
+
+      try {
+        const res = await fetch(`${window.location.origin}/prompt/translate`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: raw }),
+        });
+        if (!res.ok) {
+          const t = await res.text();
+          throw new Error(t || res.statusText);
+        }
+        const text = await res.text();
+        translateValue.textContent = text.trim() || "—";
+        translateValue.className = "value";
+        translateCopyBtn.disabled = false;
+      } catch (err) {
+        showTranslateError(err.message || "Translation failed.");
+        translateValue.textContent = "—";
+        translateValue.className = "value placeholder";
+      } finally {
+        translateBtn.disabled = false;
+        card.classList.remove("loading");
+      }
+    });
+
+    function showCompressError(msg) {
+      compressError.textContent = msg;
+      compressError.classList.remove("hidden");
+    }
+
+    function hideCompressError() {
+      compressError.classList.add("hidden");
+    }
+
+    compressBtn.addEventListener("click", async () => {
+      const raw = compressInput.value.trim();
+      if (!raw) return;
+      hideCompressError();
+      compressBtn.disabled = true;
+      compressValue.textContent = "Loading…";
+      compressValue.className = "value loading";
+      compressCopyBtn.disabled = true;
+      const card = document.querySelector('.result-card[data-type="compress"]');
+      card.classList.add("loading");
+
+      try {
+        const res = await fetch(`${window.location.origin}/prompt/compress`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: raw }),
+        });
+        if (!res.ok) {
+          const t = await res.text();
+          throw new Error(t || res.statusText);
+        }
+        const text = await res.text();
+        compressValue.textContent = text.trim() || "—";
+        compressValue.className = "value";
+        compressCopyBtn.disabled = false;
+      } catch (err) {
+        showCompressError(err.message || "Compression failed.");
+        compressValue.textContent = "—";
+        compressValue.className = "value placeholder";
+      } finally {
+        compressBtn.disabled = false;
+        card.classList.remove("loading");
+      }
     });
   </script>
 </body>
