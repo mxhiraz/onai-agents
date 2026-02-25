@@ -352,9 +352,135 @@
       outline: none;
       border-color: var(--accent);
     }
+
+    .prompt-btn-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .prompt-btn-wrap .section-title {
+      margin: 0;
+    }
+
+    .prompt-btn {
+      font-size: 0.75rem;
+      padding: 0.35rem 0.6rem;
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: color 0.2s, border-color 0.2s;
+    }
+
+    .prompt-btn:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 1rem;
+    }
+
+    .modal-overlay.hidden {
+      display: none;
+    }
+
+    .modal-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      max-width: 640px;
+      width: 100%;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-box h3 {
+      font-family: "Instrument Serif", Georgia, serif;
+      font-size: 1.1rem;
+      margin: 0 0 0.75rem;
+      color: var(--accent);
+    }
+
+    .modal-head {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+
+    .modal-body {
+      padding: 1rem 1.25rem;
+      overflow: auto;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .modal-body select {
+      width: 100%;
+      margin-bottom: 0.75rem;
+      padding: 0.5rem;
+      font-family: inherit;
+      font-size: 0.9rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+    }
+
+    .modal-body pre {
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 0.8rem;
+      line-height: 1.5;
+      margin: 0;
+      color: var(--text);
+    }
+
+    .modal-actions {
+      padding: 0.75rem 1.25rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 0.5rem;
+      justify-content: flex-end;
+    }
   </style>
 </head>
 <body>
+  <div id="promptModal" class="modal-overlay hidden" role="dialog" aria-label="System prompt">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3 id="modalTitle">System prompt</h3>
+        <button type="button" class="prompt-btn" id="modalClose">Close</button>
+      </div>
+      <div class="modal-body">
+        <select id="modalSelect" class="hidden">
+          <option value="pose">Pose</option>
+          <option value="outfit">Outfit</option>
+          <option value="studio">Studio</option>
+        </select>
+        <pre id="modalPrompt"></pre>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn prompt-btn" id="modalCopy">Copy prompt</button>
+      </div>
+    </div>
+  </div>
+
   <div class="page">
     <div class="page-header">
       <h1>ONAI R1N</h1>
@@ -362,7 +488,10 @@
 
     <div class="three-col">
       <div class="panel">
-        <h2 class="section-title">Photo · Pose · Outfit · Studio</h2>
+        <div class="prompt-btn-wrap">
+          <h2 class="section-title">Photo · Pose · Outfit · Studio</h2>
+          <button type="button" class="prompt-btn" id="photoPromptBtn">System prompts</button>
+        </div>
         <p class="subtitle" style="margin-bottom: 1rem;">Upload one image, get all three prompts.</p>
         <div class="upload-zone" id="uploadZone" role="button" tabindex="0">
           <input type="file" id="fileInput" accept="image/*" />
@@ -402,7 +531,10 @@
       </div>
 
       <div class="panel">
-        <h2 class="section-title">Prompt translator</h2>
+        <div class="prompt-btn-wrap">
+          <h2 class="section-title">Prompt translator</h2>
+          <button type="button" class="prompt-btn" id="translatePromptBtn">System prompt</button>
+        </div>
         <p class="subtitle" style="margin-bottom: 1rem;">Raw thoughts → sharp creative brief.</p>
         <div class="translate-wrap">
           <textarea
@@ -442,8 +574,64 @@
     const translateValue = document.getElementById("translateValue");
     const translateError = document.getElementById("translateError");
     const translateCopyBtn = document.getElementById("translateCopyBtn");
+    const promptModal = document.getElementById("promptModal");
+    const modalTitle = document.getElementById("modalTitle");
+    const modalSelect = document.getElementById("modalSelect");
+    const modalPrompt = document.getElementById("modalPrompt");
+    const modalClose = document.getElementById("modalClose");
+    const modalCopy = document.getElementById("modalCopy");
+    const photoPromptBtn = document.getElementById("photoPromptBtn");
+    const translatePromptBtn = document.getElementById("translatePromptBtn");
 
     let selectedFile = null;
+    let promptsCache = null;
+
+    async function getPrompts() {
+      if (promptsCache) return promptsCache;
+      const res = await fetch(`${window.location.origin}/api/prompts`);
+      if (!res.ok) throw new Error("Failed to load prompts");
+      promptsCache = await res.json();
+      return promptsCache;
+    }
+
+    function openPromptModal(mode) {
+      getPrompts().then((prompts) => {
+        if (mode === "photo") {
+          modalSelect.classList.remove("hidden");
+          modalTitle.textContent = "System prompts (Photo)";
+          const show = (key) => { modalPrompt.textContent = prompts[key] || ""; };
+          modalSelect.value = "pose";
+          show("pose");
+          modalSelect.onchange = () => show(modalSelect.value);
+        } else {
+          modalSelect.classList.add("hidden");
+          modalSelect.onchange = null;
+          modalTitle.textContent = "System prompt (Translator)";
+          modalPrompt.textContent = prompts.translate || "";
+        }
+        promptModal.classList.remove("hidden");
+      }).catch(() => {});
+    }
+
+    function closePromptModal() {
+      promptModal.classList.add("hidden");
+    }
+
+    modalClose.addEventListener("click", closePromptModal);
+    promptModal.addEventListener("click", (e) => { if (e.target === promptModal) closePromptModal(); });
+
+    modalCopy.addEventListener("click", async () => {
+      const text = modalPrompt.textContent;
+      if (!text) return;
+      try {
+        await navigator.clipboard.writeText(text);
+        modalCopy.textContent = "Copied";
+        setTimeout(() => { modalCopy.textContent = "Copy prompt"; }, 1500);
+      } catch (_) {}
+    });
+
+    photoPromptBtn.addEventListener("click", () => openPromptModal("photo"));
+    translatePromptBtn.addEventListener("click", () => openPromptModal("translate"));
 
     uploadZone.addEventListener("click", () => fileInput.click());
     fileInput.addEventListener("change", (e) => handleFile(e.target.files[0]));

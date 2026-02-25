@@ -129,6 +129,15 @@ app.get("/health", (_req, res) => {
   res.json({ ok: true });
 });
 
+app.get("/api/prompts", (_req, res) => {
+  res.json({
+    pose: POSE_SYSTEM_INSTRUCTION,
+    outfit: OUTFIT_SYSTEM_INSTRUCTION,
+    studio: STUDIO_SYSTEM_INSTRUCTION,
+    translate: TRANSLATOR_SYSTEM_INSTRUCTION,
+  });
+});
+
 app.post("/analyze/pose", upload.single("image"), async (req, res) => {
   if (!req.file) {
     return res
