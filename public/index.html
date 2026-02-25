@@ -51,7 +51,7 @@
 
     .three-col {
       display: grid;
-      grid-template-columns: 0.9fr 1fr 1.1fr;
+      grid-template-columns: 1fr 1fr;
       gap: 0;
       align-items: stretch;
       flex: 1;
@@ -402,29 +402,6 @@
       </div>
 
       <div class="panel">
-        <h2 class="section-title">Prompt compressor</h2>
-        <p class="subtitle" style="margin-bottom: 1rem;">Long prompt → shorter, same details.</p>
-        <div class="translate-wrap">
-          <textarea
-            id="compressInput"
-            placeholder="Paste pose, outfit, or scene description here..."
-            rows="4"
-          ></textarea>
-          <div class="actions">
-            <button type="button" class="btn btn-primary" id="compressBtn">Compress</button>
-          </div>
-        </div>
-        <div class="error-msg hidden" id="compressError"></div>
-        <div class="result-card" data-type="compress">
-          <div class="head">
-            <h2 class="title">Compressed prompt</h2>
-            <button type="button" class="copy-btn" data-copy="compress" disabled id="compressCopyBtn">Copy</button>
-          </div>
-          <p class="value placeholder" id="compressValue">—</p>
-        </div>
-      </div>
-
-      <div class="panel">
         <h2 class="section-title">Prompt translator</h2>
         <p class="subtitle" style="margin-bottom: 1rem;">Raw thoughts → sharp creative brief.</p>
         <div class="translate-wrap">
@@ -465,11 +442,6 @@
     const translateValue = document.getElementById("translateValue");
     const translateError = document.getElementById("translateError");
     const translateCopyBtn = document.getElementById("translateCopyBtn");
-    const compressInput = document.getElementById("compressInput");
-    const compressBtn = document.getElementById("compressBtn");
-    const compressValue = document.getElementById("compressValue");
-    const compressError = document.getElementById("compressError");
-    const compressCopyBtn = document.getElementById("compressCopyBtn");
 
     let selectedFile = null;
 
@@ -631,49 +603,6 @@
       }
     });
 
-    function showCompressError(msg) {
-      compressError.textContent = msg;
-      compressError.classList.remove("hidden");
-    }
-
-    function hideCompressError() {
-      compressError.classList.add("hidden");
-    }
-
-    compressBtn.addEventListener("click", async () => {
-      const raw = compressInput.value.trim();
-      if (!raw) return;
-      hideCompressError();
-      compressBtn.disabled = true;
-      compressValue.textContent = "Loading…";
-      compressValue.className = "value loading";
-      compressCopyBtn.disabled = true;
-      const card = document.querySelector('.result-card[data-type="compress"]');
-      card.classList.add("loading");
-
-      try {
-        const res = await fetch(`${window.location.origin}/prompt/compress`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: raw }),
-        });
-        if (!res.ok) {
-          const t = await res.text();
-          throw new Error(t || res.statusText);
-        }
-        const text = await res.text();
-        compressValue.textContent = text.trim() || "—";
-        compressValue.className = "value";
-        compressCopyBtn.disabled = false;
-      } catch (err) {
-        showCompressError(err.message || "Compression failed.");
-        compressValue.textContent = "—";
-        compressValue.className = "value placeholder";
-      } finally {
-        compressBtn.disabled = false;
-        card.classList.remove("loading");
-      }
-    });
   </script>
 </body>
 </html>
