@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Photo → Pose, Outfit, Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0d0d0d;
+      --surface: #1a1a1a;
+      --border: #2a2a2a;
+      --muted: #737373;
+      --text: #fafafa;
+      --accent: #c9a962;
+      --accent-dim: rgba(201, 169, 98, 0.15);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "DM Sans", system-ui, sans-serif;
+      font-size: 15px;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.5;
+    }
+
+    .page {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: clamp(1.5rem, 5vw, 3rem) 1.25rem 4rem;
+    }
+
+    h1 {
+      font-family: "Instrument Serif", Georgia, serif;
+      font-size: clamp(1.75rem, 4vw, 2.25rem);
+      font-weight: 400;
+      margin: 0 0 0.5rem;
+      letter-spacing: -0.02em;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      margin: 0 0 2rem;
+      font-size: 0.95rem;
+    }
+
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 2rem;
+      text-align: center;
+      background: var(--surface);
+      transition: border-color 0.2s, background 0.2s;
+      cursor: pointer;
+      margin-bottom: 1.5rem;
+    }
+
+    .upload-zone:hover,
+    .upload-zone.dragover {
+      border-color: var(--accent);
+      background: var(--accent-dim);
+    }
+
+    .upload-zone.has-file {
+      border-style: solid;
+      border-color: var(--accent);
+      background: var(--accent-dim);
+    }
+
+    .upload-zone input {
+      display: none;
+    }
+
+    .upload-zone .label {
+      display: block;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .upload-zone .filename {
+      font-weight: 500;
+      color: var(--accent);
+    }
+
+    .preview-wrap {
+      margin-top: 1rem;
+      max-height: 200px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--border);
+    }
+
+    .preview-wrap img {
+      width: 100%;
+      height: auto;
+      display: block;
+      max-height: 200px;
+      object-fit: contain;
+    }
+
+    .btn {
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 500;
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform 0.1s, opacity 0.2s;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: var(--bg);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      filter: brightness(1.1);
+    }
+
+    .btn-primary:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    .actions {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    .results {
+      display: grid;
+      gap: 1.25rem;
+    }
+
+    .result-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      transition: border-color 0.2s;
+    }
+
+    .result-card.loading {
+      border-color: var(--accent);
+      opacity: 0.9;
+    }
+
+    .result-card .head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .result-card .title {
+      font-family: "Instrument Serif", Georgia, serif;
+      font-size: 1.15rem;
+      font-weight: 400;
+      margin: 0;
+      text-transform: lowercase;
+      color: var(--accent);
+    }
+
+    .result-card .copy-btn {
+      font-size: 0.8rem;
+      padding: 0.4rem 0.75rem;
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
+    }
+
+    .result-card .copy-btn:hover {
+      color: var(--text);
+      border-color: var(--muted);
+    }
+
+    .result-card .copy-btn.copied {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .result-card .value {
+      font-size: 0.9rem;
+      color: var(--text);
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .result-card .value.placeholder {
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    .result-card .value.loading {
+      color: var(--muted);
+    }
+
+    .error-msg {
+      background: rgba(220, 80, 80, 0.12);
+      border: 1px solid rgba(220, 80, 80, 0.4);
+      color: #fca5a5;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1>Photo → Pose, Outfit, Studio</h1>
+    <p class="subtitle">Upload one image and get pose, outfit, and studio prompts in one go.</p>
+
+    <div class="upload-zone" id="uploadZone" role="button" tabindex="0">
+      <input type="file" id="fileInput" accept="image/*" />
+      <span class="label">Drop an image here or click to choose</span>
+      <span class="filename hidden" id="filename"></span>
+      <div class="preview-wrap hidden" id="previewWrap">
+        <img id="preview" alt="Preview" />
+      </div>
+    </div>
+
+    <div class="actions">
+      <button type="button" class="btn btn-primary" id="analyzeBtn" disabled>Analyze</button>
+    </div>
+
+    <div class="error-msg hidden" id="errorMsg"></div>
+
+    <div class="results">
+      <div class="result-card" data-type="pose">
+        <div class="head">
+          <h2 class="title">Pose</h2>
+          <button type="button" class="copy-btn" data-copy="pose" disabled>Copy</button>
+        </div>
+        <p class="value placeholder" id="poseValue">—</p>
+      </div>
+      <div class="result-card" data-type="outfit">
+        <div class="head">
+          <h2 class="title">Outfit</h2>
+          <button type="button" class="copy-btn" data-copy="outfit" disabled>Copy</button>
+        </div>
+        <p class="value placeholder" id="outfitValue">—</p>
+      </div>
+      <div class="result-card" data-type="studio">
+        <div class="head">
+          <h2 class="title">Studio</h2>
+          <button type="button" class="copy-btn" data-copy="studio" disabled>Copy</button>
+        </div>
+        <p class="value placeholder" id="studioValue">—</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const fileInput = document.getElementById("fileInput");
+    const uploadZone = document.getElementById("uploadZone");
+    const filenameEl = document.getElementById("filename");
+    const previewWrap = document.getElementById("previewWrap");
+    const preview = document.getElementById("preview");
+    const analyzeBtn = document.getElementById("analyzeBtn");
+    const errorMsg = document.getElementById("errorMsg");
+    const poseEl = document.getElementById("poseValue");
+    const outfitEl = document.getElementById("outfitValue");
+    const studioEl = document.getElementById("studioValue");
+
+    let selectedFile = null;
+
+    uploadZone.addEventListener("click", () => fileInput.click());
+    fileInput.addEventListener("change", (e) => handleFile(e.target.files[0]));
+
+    uploadZone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      uploadZone.classList.add("dragover");
+    });
+    uploadZone.addEventListener("dragleave", () => uploadZone.classList.remove("dragover"));
+    uploadZone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      uploadZone.classList.remove("dragover");
+      const file = e.dataTransfer?.files?.[0];
+      if (file && file.type.startsWith("image/")) handleFile(file);
+    });
+
+    function handleFile(file) {
+      if (!file || !file.type.startsWith("image/")) return;
+      selectedFile = file;
+      filenameEl.textContent = file.name;
+      filenameEl.classList.remove("hidden");
+      preview.src = URL.createObjectURL(file);
+      previewWrap.classList.remove("hidden");
+      uploadZone.classList.add("has-file");
+      analyzeBtn.disabled = false;
+      hideError();
+      clearResults();
+    }
+
+    function clearResults() {
+      poseEl.textContent = "—";
+      poseEl.className = "value placeholder";
+      outfitEl.textContent = "—";
+      outfitEl.className = "value placeholder";
+      studioEl.textContent = "—";
+      studioEl.className = "value placeholder";
+      document.querySelectorAll(".result-card").forEach((c) => c.classList.remove("loading"));
+      document.querySelectorAll(".copy-btn").forEach((b) => (b.disabled = true));
+    }
+
+    function showError(msg) {
+      errorMsg.textContent = msg;
+      errorMsg.classList.remove("hidden");
+    }
+
+    function hideError() {
+      errorMsg.classList.add("hidden");
+    }
+
+    async function fetchPrompt(endpoint) {
+      const form = new FormData();
+      form.append("image", selectedFile);
+      const res = await fetch(endpoint, { method: "POST", body: form });
+      if (!res.ok) {
+        const t = await res.text();
+        throw new Error(t || res.statusText);
+      }
+      return res.text();
+    }
+
+    analyzeBtn.addEventListener("click", async () => {
+      if (!selectedFile) return;
+      hideError();
+      analyzeBtn.disabled = true;
+      document.querySelectorAll(".result-card").forEach((c) => c.classList.add("loading"));
+      poseEl.textContent = "Loading…";
+      poseEl.className = "value loading";
+      outfitEl.textContent = "Loading…";
+      outfitEl.className = "value loading";
+      studioEl.textContent = "Loading…";
+      studioEl.className = "value loading";
+
+      const base = window.location.origin;
+      try {
+        const [pose, outfit, studio] = await Promise.all([
+          fetchPrompt(`${base}/analyze/pose`),
+          fetchPrompt(`${base}/analyze/outfit`),
+          fetchPrompt(`${base}/analyze/studio`),
+        ]);
+
+        poseEl.textContent = pose.trim() || "—";
+        poseEl.className = "value";
+        outfitEl.textContent = outfit.trim() || "—";
+        outfitEl.className = "value";
+        studioEl.textContent = studio.trim() || "—";
+        studioEl.className = "value";
+
+        document.querySelectorAll(".result-card").forEach((c) => c.classList.remove("loading"));
+        document.querySelectorAll(".copy-btn").forEach((b) => (b.disabled = false));
+      } catch (err) {
+        showError(err.message || "Analysis failed.");
+        clearResults();
+      } finally {
+        analyzeBtn.disabled = false;
+      }
+    });
+
+    document.querySelectorAll(".copy-btn").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const type = btn.getAttribute("data-copy");
+        const el = document.getElementById(`${type}Value`);
+        const text = el.textContent?.trim();
+        if (!text || text === "—") return;
+        try {
+          await navigator.clipboard.writeText(text);
+          btn.textContent = "Copied";
+          btn.classList.add("copied");
+          setTimeout(() => {
+            btn.textContent = "Copy";
+            btn.classList.remove("copied");
+          }, 1500);
+        } catch (_) {}
+      });
+    });
+  </script>
+</body>
+</html>

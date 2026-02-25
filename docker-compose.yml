@@ -1,0 +1,11 @@
+services:
+  app:
+    build: .
+    ports:
+      - "5001:5001"
+    environment:
+      - PORT=5001
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    env_file:
+      - .env
+    restart: unless-stopped
