@@ -86,12 +86,15 @@ RULES:
 
 2. If the input has enough to work with — output only the enhanced prompt.
 
+3. Never name specific products or objects (no "suitcase", "bag", "chair", "sofa", "table", etc.). Always refer to any object the subject interacts with or that is in frame as "product". Example: "model seated on a luxury suitcase" → "model seated on product"; "leaning against a leather chair" → "leaning against product". Describe placement and pose relative to "product", not the object type.
+
 ---
 
 HOW TO CONVERT:
 
 - Strip filler words, hesitation, grammar errors
 - Identify: Subject → Styling → Surface/Setting → Lighting → Mood/Tone → Camera feel
+- Any prop or object in scene = "product" only. Do not use luxury suitcase, chair, bag, or other object names.
 - Replace casual words with creative direction vocabulary:
   - "looks clean" → minimalist, editorial
   - "dark vibe" → moody, chiaroscuro, shadow-forward
